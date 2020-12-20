@@ -28,15 +28,38 @@ extension ACPresentationController: UIViewControllerTransitioningDelegate {
 }
 
 public protocol ACPresentationControllerProtocol: UIViewController {
+    // MARK: Must be conformed
+    
+    // will call no matter drag dismiss or tap dimming to dismiss
     var acpc_dismissClosure: (() -> Void)? { get set }
+    
+    // defines the height of presented view controller
     var acpc_controllerHeight: CGFloat { get set }
     
-    // Optional
+    
+    // MARK: Optional
+    
+    // radius of top corner (default: 8.0)
     var acpc_viewCornerRadius: CGFloat { get }
+    
+    // if allows dimming view tap to dismiss
+    // (default: true)
     var acpc_tapDimmingToDismiss: Bool { get }
+    
+    // alpha of dimming view
+    // (default: 0.3)
     var acpc_dimmingAlpha: CGFloat { get }
+    
+    // defines to drag how much percentage of presented view should trigger dismiss action when drag dismiss interactive finger up
+    // (default: 0.5)
     var acpc_panToDismissPercent: CGFloat { get }
+    
+    // defines the color of drag dismiss grabber
+    // (default: .systemGray)
     var acpc_grabberColor: UIColor { get }
+    
+    // if allows full top area responds to drag dismiss interactive
+    // (default: false)
     var acpc_needFullTopGrabber: Bool { get }
 }
 
