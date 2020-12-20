@@ -1,7 +1,7 @@
 # ACPresentationController
 A common pesentation controller lib
 
-![preview](https://raw.githubusercontent.com/albertgh/ACPresentationController/main/Resources/IMB_jUu7re.GIF)
+![preview](https://raw.githubusercontent.com/albertgh/ACPresentationController/main/Resources/IMB_5Sw480.GIF)
 
 
 ## Installing
