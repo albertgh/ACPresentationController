@@ -7,37 +7,63 @@
 import Foundation
 import UIKit
 
+public extension UIViewController {
+    func acpc_showPresentation(_ vc: ACPresentationControllerProtocol,
+                               animated: Bool,
+                               completion: (() -> Void)? = nil) {
+        let present = ACPresentationController(presentedViewController: vc,
+                                               presenting: self)
+        vc.modalPresentationStyle = .custom
+        vc.transitioningDelegate = present
+        self.present(vc, animated: animated, completion: completion)
+    }
+}
+
 public protocol ACPresentationControllerProtocol: UIViewController {
     var acpc_dismissClosure: (() -> Void)? { get set }
     var acpc_controllerHeight: CGFloat { get set }
+    
+    // Optional
     var acpc_viewCornerRadius: CGFloat { get }
-    var acpc_dimmingAlpha: CGFloat { get }
     var acpc_tapDimmingToDismiss: Bool { get }
+    var acpc_dimmingAlpha: CGFloat { get }
     var acpc_panToDismissPercent: CGFloat { get }
+    var acpc_grabberColor: UIColor { get }
+    var acpc_needFullTopGrabber: Bool { get }
 }
 
 public extension ACPresentationControllerProtocol {
     var acpc_viewCornerRadius: CGFloat {
         return 8.0
     }
-    var acpc_dimmingAlpha: CGFloat {
-        return 0.3
-    }
     var acpc_tapDimmingToDismiss: Bool {
         return true
     }
+    var acpc_dimmingAlpha: CGFloat {
+        return 0.3
+    }
     var acpc_panToDismissPercent: CGFloat {
         return 0.5
+    }
+    var acpc_grabberColor: UIColor {
+        return .systemGray
+    }
+    var acpc_needFullTopGrabber: Bool {
+        return false
     }
 }
 
 public class ACPresentationController: UIPresentationController {
     static var animationDuration: TimeInterval = 0.25
     
-    public var controllerHeight: CGFloat
-    public var dimmingAlpha: CGFloat
-    public var panToDismissPercent: CGFloat
-    public var vcDidDismissClosure: (() -> Void)?
+    private var vcDidDismissClosure: (() -> Void)?
+    private var controllerHeight: CGFloat
+    
+    private var dimmingAlpha: CGFloat
+    private var panToDismissPercent: CGFloat
+    
+    private var grabberColor: UIColor
+    private var needFullTopGrabber: Bool
     
     lazy var dimmingView: UIView = {
         let view = UIView()
@@ -61,7 +87,7 @@ public class ACPresentationController: UIPresentationController {
         let grabberW: CGFloat = 36.0
         let grabberH: CGFloat = 5.0
         let grabber: UIView = UIView()
-        grabber.backgroundColor = .systemGray
+        grabber.backgroundColor = grabberColor
         grabber.layer.cornerRadius = grabberH / 2.0
         view.addSubview(grabber)
         grabber.translatesAutoresizingMaskIntoConstraints = false
@@ -105,19 +131,23 @@ public class ACPresentationController: UIPresentationController {
     public override init(presentedViewController: UIViewController,
                          presenting presentingViewController: UIViewController?) {
         if case let vc as ACPresentationControllerProtocol = presentedViewController {
-            controllerHeight = vc.acpc_controllerHeight
-            dimmingAlpha = vc.acpc_dimmingAlpha
-            panToDismissPercent = vc.acpc_panToDismissPercent
             vcDidDismissClosure = vc.acpc_dismissClosure
+            controllerHeight = vc.acpc_controllerHeight
             vc.view.layer.cornerRadius = vc.acpc_viewCornerRadius
             vc.view.clipsToBounds = true
+            dimmingAlpha = vc.acpc_dimmingAlpha
+            panToDismissPercent = vc.acpc_panToDismissPercent
+            grabberColor = vc.acpc_grabberColor
+            needFullTopGrabber = vc.acpc_needFullTopGrabber
         } else {
-            controllerHeight = UIScreen.main.bounds.width
-            dimmingAlpha = 0.3
-            panToDismissPercent = 0.5
             vcDidDismissClosure = nil
+            controllerHeight = UIScreen.main.bounds.width
             presentedViewController.view.layer.cornerRadius = 0.8
             presentedViewController.view.clipsToBounds = true
+            dimmingAlpha = 0.3
+            panToDismissPercent = 0.5
+            grabberColor = .systemGray
+            needFullTopGrabber = false
         }
         super.init(presentedViewController: presentedViewController, presenting: presentingViewController)
     }
@@ -161,10 +191,14 @@ public class ACPresentationController: UIPresentationController {
         
         dimmingView.frame = containerView?.bounds ?? UIScreen.main.bounds
         
-        let panIndicatorX: CGFloat = (dimmingView.frame.size.width - ACPresentationController.panIndicatorSize.width) / 2.0
+        var panIndicatorSize = ACPresentationController.panIndicatorSize
+        if needFullTopGrabber {
+            panIndicatorSize.width = self.presentedViewController.view.bounds.size.width
+        }
+        let panIndicatorX: CGFloat = (dimmingView.frame.size.width - panIndicatorSize.width) / 2.0
         panIndicator.frame = CGRect(origin: CGPoint(x: panIndicatorX,
                                                     y: 0.0),
-                                    size: ACPresentationController.panIndicatorSize)
+                                    size: panIndicatorSize)
     }
     
     public override func preferredContentSizeDidChange(forChildContentContainer container: UIContentContainer) {
@@ -279,18 +313,6 @@ extension ACPresentationController {
                             }
                         }
                        })
-    }
-}
-
-public extension UIViewController {
-    func showPresentation(_ vc: ACPresentationControllerProtocol,
-                          animated: Bool,
-                          completion: (() -> Void)? = nil) {
-        let present = ACPresentationController(presentedViewController: vc,
-                                               presenting: self)
-        vc.modalPresentationStyle = .custom
-        vc.transitioningDelegate = present
-        self.present(vc, animated: animated, completion: completion)
     }
 }
 
