@@ -19,6 +19,14 @@ public extension UIViewController {
     }
 }
 
+extension ACPresentationController: UIViewControllerTransitioningDelegate {
+    public func presentationController(forPresented presented: UIViewController,
+                                       presenting: UIViewController?,
+                                       source: UIViewController) -> UIPresentationController? {
+        return self
+    }
+}
+
 public protocol ACPresentationControllerProtocol: UIViewController {
     var acpc_dismissClosure: (() -> Void)? { get set }
     var acpc_controllerHeight: CGFloat { get set }
@@ -223,7 +231,8 @@ public class ACPresentationController: UIPresentationController {
 }
 
 extension ACPresentationController {
-    @objc func dimmingViewTapped() {
+    @objc
+    func dimmingViewTapped() {
         if case let vc as ACPresentationControllerProtocol = self.presentedViewController {
             guard vc.acpc_tapDimmingToDismiss else {
                 return
@@ -236,7 +245,8 @@ extension ACPresentationController {
         }
     }
     
-    @objc dynamic func dismissPanGesture(sender: UIPanGestureRecognizer) {
+    @objc
+    dynamic func dismissPanGesture(sender: UIPanGestureRecognizer) {
         let translate = sender.translation(in: self.presentedView)
         switch sender.state {
         case .began:
@@ -313,13 +323,5 @@ extension ACPresentationController {
                             }
                         }
                        })
-    }
-}
-
-extension ACPresentationController: UIViewControllerTransitioningDelegate {
-    public func presentationController(forPresented presented: UIViewController,
-                                       presenting: UIViewController?,
-                                       source: UIViewController) -> UIPresentationController? {
-        return self
     }
 }
