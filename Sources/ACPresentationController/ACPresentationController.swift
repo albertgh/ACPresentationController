@@ -58,9 +58,17 @@ public protocol ACPresentationControllerProtocol: UIViewController {
     // (default: .systemGray)
     var acpc_grabberColor: UIColor { get }
     
+    // defines grabber height for drag dismiss interactive
+    // (default: 34.0)
+    var acpc_topGrabberHeight: CGFloat { get }
+
     // if allows full top area responds to drag dismiss interactive
     // (default: false)
     var acpc_needFullTopGrabber: Bool { get }
+    
+    // send drag dismiss grabber down to the back
+    // (default: false)
+    var acpc_topGrabberSendToBack: Bool { get }
 }
 
 public extension ACPresentationControllerProtocol {
@@ -79,7 +87,13 @@ public extension ACPresentationControllerProtocol {
     var acpc_grabberColor: UIColor {
         return .systemGray
     }
+    var acpc_topGrabberHeight: CGFloat {
+        return 34.0
+    }
     var acpc_needFullTopGrabber: Bool {
+        return false
+    }
+    var acpc_topGrabberSendToBack: Bool {
         return false
     }
 }
@@ -87,6 +101,8 @@ public extension ACPresentationControllerProtocol {
 public class ACPresentationController: UIPresentationController {
     static var animationDuration: TimeInterval = 0.25
     
+    static var topGrabberWidth: CGFloat = 80.0
+
     private var vcDidDismissClosure: (() -> Void)?
     private var controllerHeight: CGFloat
     
@@ -94,7 +110,9 @@ public class ACPresentationController: UIPresentationController {
     private var panToDismissPercent: CGFloat
     
     private var grabberColor: UIColor
+    private var topGrabberHeight: CGFloat
     private var needFullTopGrabber: Bool
+    private var topGrabberSendToBack: Bool
     
     lazy var dimmingView: UIView = {
         let view = UIView()
@@ -107,13 +125,11 @@ public class ACPresentationController: UIPresentationController {
         return view
     }()
     
-    static var panIndicatorSize: CGSize = CGSize(width: 100.0, height: 44.0)
     lazy var panIndicator: UIView = {
         let view = UIView()
         view.backgroundColor = .clear
         let pan = UIPanGestureRecognizer(target: self, action: #selector(dismissPanGesture(sender:)))
         view.addGestureRecognizer(pan)
-        
         let grabberY: CGFloat = 5.0
         let grabberW: CGFloat = 36.0
         let grabberH: CGFloat = 5.0
@@ -122,38 +138,12 @@ public class ACPresentationController: UIPresentationController {
         grabber.layer.cornerRadius = grabberH / 2.0
         view.addSubview(grabber)
         grabber.translatesAutoresizingMaskIntoConstraints = false
-        let topConstraint = NSLayoutConstraint(item: grabber,
-                                               attribute: .top,
-                                               relatedBy: .equal,
-                                               toItem: view,
-                                               attribute: .top,
-                                               multiplier: 1.0,
-                                               constant: grabberY)
-        topConstraint.isActive = true
-        let xConstraint = NSLayoutConstraint(item: grabber,
-                                             attribute: .centerX,
-                                             relatedBy: .equal,
-                                             toItem: view,
-                                             attribute: .centerX,
-                                             multiplier: 1.0,
-                                             constant: 0.0)
-        xConstraint.isActive = true
-        let wConstraint = NSLayoutConstraint(item: grabber,
-                                             attribute: .width,
-                                             relatedBy: .equal,
-                                             toItem: nil,
-                                             attribute: .notAnAttribute,
-                                             multiplier: 1.0,
-                                             constant: grabberW)
-        wConstraint.isActive = true
-        let hConstraint = NSLayoutConstraint(item: grabber,
-                                             attribute: .height,
-                                             relatedBy: .equal,
-                                             toItem: nil,
-                                             attribute: .notAnAttribute,
-                                             multiplier: 1.0,
-                                             constant: grabberH)
-        hConstraint.isActive = true
+        NSLayoutConstraint.activate([
+            grabber.topAnchor.constraint(equalTo: view.topAnchor, constant: grabberY),
+            grabber.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: 0.0),
+            grabber.widthAnchor.constraint(equalToConstant: grabberW),
+            grabber.heightAnchor.constraint(equalToConstant: grabberH)
+        ])
         return view
     }()
     
@@ -168,8 +158,10 @@ public class ACPresentationController: UIPresentationController {
             vc.view.clipsToBounds = true
             dimmingAlpha = vc.acpc_dimmingAlpha
             panToDismissPercent = vc.acpc_panToDismissPercent
+            topGrabberHeight = vc.acpc_topGrabberHeight
             grabberColor = vc.acpc_grabberColor
             needFullTopGrabber = vc.acpc_needFullTopGrabber
+            topGrabberSendToBack = vc.acpc_topGrabberSendToBack
         } else {
             vcDidDismissClosure = nil
             controllerHeight = UIScreen.main.bounds.width
@@ -177,8 +169,10 @@ public class ACPresentationController: UIPresentationController {
             presentedViewController.view.clipsToBounds = true
             dimmingAlpha = 0.3
             panToDismissPercent = 0.5
+            topGrabberHeight = 34.0
             grabberColor = .systemGray
             needFullTopGrabber = false
+            topGrabberSendToBack = false
         }
         super.init(presentedViewController: presentedViewController, presenting: presentingViewController)
     }
@@ -187,6 +181,11 @@ public class ACPresentationController: UIPresentationController {
         dimmingView.alpha = 0.0
         containerView?.addSubview(dimmingView)
         self.presentedViewController.view.addSubview(panIndicator)
+        if self.topGrabberSendToBack {
+            self.presentedViewController.view.sendSubviewToBack(panIndicator)
+        } else {
+            self.presentedViewController.view.bringSubviewToFront(panIndicator)
+        }
         
         let transitionCoordinator = presentingViewController.transitionCoordinator!
         dimmingView.alpha = 0
@@ -222,7 +221,8 @@ public class ACPresentationController: UIPresentationController {
         
         dimmingView.frame = containerView?.bounds ?? UIScreen.main.bounds
         
-        var panIndicatorSize = ACPresentationController.panIndicatorSize
+        var panIndicatorSize = CGSize(width: ACPresentationController.topGrabberWidth,
+                                      height: self.topGrabberHeight)
         if needFullTopGrabber {
             panIndicatorSize.width = self.presentedViewController.view.bounds.size.width
         }

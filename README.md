@@ -65,11 +65,18 @@ var acpc_grabberColor: UIColor {
     return .systemGray
 }
 
+// defines grabber height for drag dismiss interactive
+// (default: 34.0)
+var acpc_topGrabberHeight: CGFloat { get }
+
 // if allows full top area responds to drag dismiss interactive
 // (default: false)
-var acpc_needFullTopGrabber: Bool {
-    return false
-}
+var acpc_needFullTopGrabber: Bool { get }
+
+// send drag dismiss grabber down to the back
+// (default: false)
+var acpc_topGrabberSendToBack: Bool { get }
+
 ```
 
 
