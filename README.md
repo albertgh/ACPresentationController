@@ -93,7 +93,7 @@ There's an example project available to try. Simply open the `ACPresentationCont
 
 ## Requirements
 
-- iOS 9.0+
+- iOS 12.0+
 - Swift 5.0 or higher
 
 
